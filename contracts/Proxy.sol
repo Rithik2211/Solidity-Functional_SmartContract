@@ -1,34 +1,41 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-// Uncomment this line to use console.log
 // import "hardhat/console.sol";
+// EOA -> proxy -> Logic1/Logic2
 
-contract Lock {
-    uint public unlockTime;
-    address payable public owner;
-
-    event Withdrawal(uint amount, uint when);
-
-    constructor(uint _unlockTime) payable {
-        require(
-            block.timestamp < _unlockTime,
-            "Unlock time should be in the future"
-        );
-
-        unlockTime = _unlockTime;
-        owner = payable(msg.sender);
+contract Proxy {
+    address implementation;
+    function changeImplementation(address _implementation) external{
+        implementation = _implementation;
     }
 
-    function withdraw() public {
-        // Uncomment this line, and the import of "hardhat/console.sol", to print a log in your terminal
-        // console.log("Unlock time is %o and block timestamp is %o", unlockTime, block.timestamp);
+    fallback() external {
+        (bool success,) = implementation.call(msg.data);
+        require(success);
+    }
 
-        require(block.timestamp >= unlockTime, "You can't withdraw yet");
-        require(msg.sender == owner, "You aren't the owner");
+    function changeX(uint _x)external{
+        Logic1(implementation).changeX(_x);
+    }
+}
 
-        emit Withdrawal(address(this).balance, block.timestamp);
+contract Logic1{
+    uint public x = 0;
 
-        owner.transfer(address(this).balance);
+    function changeX(uint _x) external{
+        x = _x;
+    }
+}
+
+contract Logic2 {
+    uint public x = 0;
+
+    function changeX(uint _x) external{
+        x = _x;
+    }
+
+    function tripleX() external{
+        x *= 3;
     }
 }
