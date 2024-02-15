@@ -1,5 +1,6 @@
 const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { assert } = require("chai");
+const { ethers, provider } = require("hardhat");
 
 describe("Proxy", function () {
   async function deployFixture() {
@@ -17,30 +18,35 @@ describe("Proxy", function () {
 
     return { proxy , logic1, logic2, proxyAsLogic1, proxyAsLogic2 };
   }
+
+  async function lookUpuint (contractAddress, slot){
+    return parseInt(await provider.getStorage(contractAddress, slot));
+  }
+
   it("Should work with Logic1", async function () {
     const { proxy, logic1, proxyAsLogic1 } = await loadFixture(deployFixture);
     await proxy.changeImplementation(logic1);
-    assert.equal(await logic1.x(), 0);
+    assert.equal(await lookUpuint(logic1, '0x0'), 0);
 
     await proxyAsLogic1.changeX(55);
-    assert.equal(await logic1.x(), 55);
+    assert.equal(await lookUpuint(logic1, '0x0'), 55);
   });
 
   it("Should work with upgrades", async function () {
     const { proxy , logic1, logic2, proxyAsLogic1, proxyAsLogic2 } = await loadFixture(deployFixture);
     await proxy.changeImplementation(logic1);
-    assert.equal(await logic1.x(), 0);
+    assert.equal(await lookUpuint(logic1, '0x0'), 0);
 
     await proxyAsLogic1.changeX(55);
-    assert.equal(await logic1.x(), 55);
+    assert.equal(await lookUpuint(logic1, '0x0'), 55);
 
     await proxy.changeImplementation(logic2);
-    assert.equal(await logic2.x(), 0);
+    assert.equal(await lookUpuint(logic2, '0x0'), 0);
 
     await proxyAsLogic2.changeX(50);
-    assert.equal(await logic2.x(), 50);
+    assert.equal(await lookUpuint(logic2, '0x0'), 50);
 
     await proxyAsLogic2.tripleX();
-    assert.equal(await logic2.x(), 150);
+    assert.equal(await lookUpuint(logic2, '0x0'), 150);
   });
 });
